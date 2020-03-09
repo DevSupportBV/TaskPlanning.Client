@@ -1,4 +1,4 @@
-﻿using AutoPlanning.Models;
+﻿using TaskPlanning.Models;
 using RestEase;
 using System;
 using System.Net.Http.Headers;
@@ -72,6 +72,10 @@ namespace TaskPlanning.Client
 
                 return planningTask;
             }
+            catch (ApiException e)
+            {
+                throw new Exception(e.Content);
+            }
             catch (TaskCanceledException e)
             {
                 if (planningTask == null)
@@ -91,8 +95,8 @@ namespace TaskPlanning.Client
 
         private bool IsInProgress(PlanningTask task) => task.Status switch
         {
-            PlanningTaskStatus.NotRunning => true,
-            PlanningTaskStatus.Running    => true,
+            PlanningTaskStatus.Queued   => true,
+            PlanningTaskStatus.Running  => true,
 
             PlanningTaskStatus.Success  => false,
             PlanningTaskStatus.Canceled => false,

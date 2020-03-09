@@ -1,4 +1,4 @@
-﻿using AutoPlanning.Models;
+﻿using TaskPlanning.Models;
 using Newtonsoft.Json;
 using RestEase;
 using System;
@@ -22,16 +22,5 @@ namespace TaskPlanning.Client.Api
         [Get("api/Planning/{planningTaskId}")]
         [Header("Authorization", "Bearer")]
         Task<PlanningTask> GetPlanning([Path] Guid planningTaskId, CancellationToken cancellationToken);
-    }
-
-    public class TokenRequest //TODO: Move to Models library
-    {
-        public string AccessKey { get; set; }
-    }
-
-    public class TokenResponse //TODO: Move to Models library
-    {
-        [JsonProperty("access_Token")]
-        public string AccessToken { get; set; }
     }
 }
