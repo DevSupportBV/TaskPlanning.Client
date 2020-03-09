@@ -24,6 +24,7 @@ namespace TaskPlanning.Client
             api = RestClient.For<ITaskPlanningApi>(endpoint, AddAuthHeader());
         }
 
+        private string accessToken;
         private RequestModifier AddAuthHeader()
         {
             return async (request, cancellationToken) =>
@@ -33,10 +34,16 @@ namespace TaskPlanning.Client
                 if (auth == null)
                     return;
 
-                var response = await api.GetAuthToken(new TokenRequest { AccessKey = accessKey }, cancellationToken);
+                var token = accessToken ?? await GetAccessToken(cancellationToken);
 
-                request.Headers.Authorization = new AuthenticationHeaderValue(auth.Scheme, response.AccessToken);
+                request.Headers.Authorization = new AuthenticationHeaderValue(auth.Scheme, token);
             };
+        }
+
+        private async Task<string> GetAccessToken(CancellationToken cancellationToken)
+        {
+            var response = await api.GetAuthToken(new TokenRequest { AccessKey = accessKey }, cancellationToken);
+            return response.AccessToken;
         }
 
         public Task<PlanningTask> Plan(PlanningRequest request)
@@ -45,6 +52,8 @@ namespace TaskPlanning.Client
         }
         public async Task<PlanningTask> Plan(PlanningRequest request, CancellationToken cancellationToken)
         {
+            ClearAccessToken();
+
             PlanningTask planningTask = null;
             try
             {
@@ -73,6 +82,11 @@ namespace TaskPlanning.Client
 
                 return planningTask;
             }
+        }
+
+        private void ClearAccessToken()
+        {
+            accessToken = null;
         }
 
         private bool IsInProgress(PlanningTask task) => task.Status switch
