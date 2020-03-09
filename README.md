@@ -3,9 +3,52 @@
 
 You can use this library to access taskplanningapi.com's scheduling API from .Net environments.
 
-
-
-
 ## Related
 - TaskPlanning.Client.Sample: Example console application highlighting key features.
 - TaskPlanning.Models: Contains only the DTO models with Newtonsoft Json.NET attributes for serialization. ![NuGet](https://img.shields.io/nuget/v/TaskPlanning.Models?label=TaskPlanning.Models "NuGet")
+
+## Basic usage
+
+### TaskPlanningClient
+```C#
+//Use your private access key to create instance of the TaskPlanningClient
+var accessKey = "YourAccessKey";
+var client = TaskPlanningClient.Create(accessKey);
+
+//Create a planning request
+var request = new PlanningRequest(); //More on this later
+
+//Pass request to the Plan method and await the PlanningTask result.
+PlanningTask planning = await client.Plan(request);
+```
+
+### PlanningRequest
+
+### PlanningTask
+The PlanningTask data structure will contain information about the execution of your planning request.
+When the request is fully completed the status becomes Success.
+
+
+```C#
+public class PlanningTask
+{
+    public virtual Guid Id { get; set; }
+    public virtual TimeSpan? Duration { get; set; }
+    public virtual Planning Planning { get; set; }
+    public virtual int Progress { get; set; }
+    public virtual Exception Exception { get; set; }
+    public virtual PlanningTaskStatus Status { get; set; }
+}
+```
+### PlanningTaskStatus enum
+
+```C#
+public enum PlanningTaskStatus
+{
+    Running = 0,
+    Success = 1,
+    Canceled = 2,
+    Queued = 3,
+    Error = 99
+}
+```
