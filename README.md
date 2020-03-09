@@ -41,6 +41,9 @@ public class PlanningTask
 }
 ```
 ### PlanningTaskStatus enum
+The PlanningTaskStatus enum contains the various stages a planning request job can have.
+Some of them are for internal use because this library handles status polling for you.
+You should only encounter **Success**, **Error** and if you make use of cancellation tokens you can also expect **Canceled**.
 
 ```C#
 public enum PlanningTaskStatus
