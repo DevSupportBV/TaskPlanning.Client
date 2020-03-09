@@ -2,6 +2,7 @@
 using RestEase;
 using System;
 using System.Net.Http.Headers;
+using System.Threading;
 using System.Threading.Tasks;
 using TaskPlanning.Client.Api;
 
@@ -32,28 +33,46 @@ namespace TaskPlanning.Client
                 if (auth == null)
                     return;
 
-                var response = await api.GetAuthToken(new TokenRequest { AccessKey = accessKey });
+                var response = await api.GetAuthToken(new TokenRequest { AccessKey = accessKey }, cancellationToken);
 
                 request.Headers.Authorization = new AuthenticationHeaderValue(auth.Scheme, response.AccessToken);
             };
         }
 
-        public async Task<PlanningTask> Plan(PlanningRequest request)
+        public Task<PlanningTask> Plan(PlanningRequest request)
         {
-            PlanningTask task = await api.PostPlanning(request);
-
-            do
+            return Plan(request, CancellationToken.None);
+        }
+        public async Task<PlanningTask> Plan(PlanningRequest request, CancellationToken cancellationToken)
+        {
+            PlanningTask planningTask = null;
+            try
             {
-                await Task.Delay(5000);
-                task = await api.GetPlanning(task.Id);
+                planningTask = await api.PostPlanning(request, cancellationToken);
+
+                do
+                {
+                    await Task.Delay(5000, cancellationToken);
+                    planningTask = await api.GetPlanning(planningTask.Id, cancellationToken);
+                }
+
+                while (IsInProgress(planningTask) && !cancellationToken.IsCancellationRequested);
+
+                if (cancellationToken.IsCancellationRequested)
+                    planningTask.Status = PlanningTaskStatus.Canceled;
+
+                return planningTask;
             }
+            catch (TaskCanceledException e)
+            {
+                if (planningTask == null)
+                    planningTask = new PlanningTask();
 
-            while (IsInProgress(task));
+                planningTask.Status = PlanningTaskStatus.Canceled;
+                planningTask.Exception = e;
 
-            if (task.Status == PlanningTaskStatus.Success)
-                return task;
-            else
-                throw new Exception($"Failed planning: {task.Status}");
+                return planningTask;
+            }
         }
 
         private bool IsInProgress(PlanningTask task) => task.Status switch
