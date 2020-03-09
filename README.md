@@ -23,6 +23,25 @@ PlanningTask planning = await client.Plan(request);
 ```
 
 ### PlanningRequest
+This data structure contain all your available data that is needed to perform a planning request. 
+#### PlanningRequest.PlanningWindow
+This must contain the planning window you would like to plan. You can specify the Start en End date time
+#### PlanningRequest.Resources
+Here you can specify all your resources that can be planned. Resources can be anything e.g. a person. Every resource can also have different time windows. 
+#### PlanningRequest.Mode
+With this you can specify which planning mode you want to use. 
+```C#
+    public enum PlanningMode
+    {
+        Regular = 0,
+        Options = 1
+    }
+```
+Planning mode Regular will try to plan all items. With planning mode Options you can get back all the options for the provided plan items, this can be useful if you would like to reschedule a plan item.
+
+#### PlanningRequest.PendingPlanItems
+These are the items that should be planned.
+
 
 ### PlanningTask
 The PlanningTask data structure will contain information about the execution of your planning request.
