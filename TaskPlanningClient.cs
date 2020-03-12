@@ -12,9 +12,21 @@ namespace TaskPlanning.Client
     {
         private ITaskPlanningApi api;
 
-        public static TaskPlanningClient Create(string accessKey)
+        public static async Task<TaskPlanningClient> Create(string accessKey, string endpoint = null)
         {
-            return new TaskPlanningClient("https://api.taskplanningapi.com/TaskplanningAPI", accessKey);
+            var client = new TaskPlanningClient(endpoint ?? "https://api.taskplanningapi.com/TaskplanningAPI", accessKey);
+            try
+            {
+                await client.GetAccessToken(CancellationToken.None);
+            }
+            catch (RestEase.ApiException ex)
+            {
+                if (ex.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                    throw new InvalidAccessKeyException();
+                else
+                    throw ex;
+            }
+            return client;
         }
 
         private string accessKey;
