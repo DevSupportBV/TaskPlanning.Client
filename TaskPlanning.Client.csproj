@@ -3,6 +3,10 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>8.0</LangVersion>
+    <Company>Dev-Support B.V.</Company>
+    <Authors>Dev-Support B.V.</Authors>
+    <Copyright>Dev-Support B.V.</Copyright>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Version>1.0.3</Version>
   </PropertyGroup>
 
