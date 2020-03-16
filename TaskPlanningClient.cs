@@ -12,6 +12,13 @@ namespace TaskPlanning.Client
     {
         private ITaskPlanningApi api;
 
+        /// <summary>
+        /// This method will create a new instance of this client class. It will also try to validate the access key, when this happens 
+        /// a <see cref="InvalidAccessKeyException"/> will be thrown.
+        /// </summary>
+        /// <param name="accessKey"></param>
+        /// <param name="endpoint"></param>
+        /// <returns></returns>
         public static async Task<TaskPlanningClient> Create(string accessKey, string endpoint = null)
         {
             var client = new TaskPlanningClient(endpoint ?? "https://api.taskplanningapi.com/TaskplanningAPI", accessKey);
@@ -58,12 +65,29 @@ namespace TaskPlanning.Client
             return response.AccessToken;
         }
 
-        public Task<PlanningTask> Plan(PlanningRequest request)
+        /// <summary>
+        /// This method will start the planning process and handle's the polling to the backend. When the planning is done
+        /// the async task will stop and return the <see cref="PlanningTask"/> object.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="pollingInterval"></param>
+        /// <returns></returns>
+        public Task<PlanningTask> Plan(PlanningRequest request, TimeSpan? pollingInterval = null)
         {
-            return Plan(request, CancellationToken.None);
+            return Plan(request, CancellationToken.None, pollingInterval);
         }
-        public async Task<PlanningTask> Plan(PlanningRequest request, CancellationToken cancellationToken)
+
+        /// <summary>
+        /// This method will start the planning process and handle's the polling to the backend. When the planning is done or stopped/cancelled
+        /// the async task will stop and return the <see cref="PlanningTask"/> object.
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="cancellationToken"></param>
+        /// <param name="pollingInterval"></param>
+        /// <returns></returns>
+        public async Task<PlanningTask> Plan(PlanningRequest request, CancellationToken cancellationToken, TimeSpan? pollingInterval = null)
         {
+            var pollingTimeSpan = pollingInterval ?? TimeSpan.FromSeconds(5);
             ClearAccessToken();
 
             PlanningTask planningTask = null;
@@ -71,16 +95,21 @@ namespace TaskPlanning.Client
             {
                 planningTask = await api.PostPlanning(request, cancellationToken);
 
+                PlanningTaskUpdated?.Invoke(this, new TaskPlanningUpdateEventArgs(planningTask));
                 do
                 {
-                    await Task.Delay(5000, cancellationToken);
+                    await Task.Delay(pollingTimeSpan, cancellationToken);
                     planningTask = await api.GetPlanning(planningTask.Id, cancellationToken);
+                    PlanningTaskUpdated?.Invoke(this, new TaskPlanningUpdateEventArgs(planningTask));
                 }
 
-                while (IsInProgress(planningTask) && !cancellationToken.IsCancellationRequested);
+                while (planningTask.IsInProgress() && !cancellationToken.IsCancellationRequested);
 
                 if (cancellationToken.IsCancellationRequested)
+                {
                     planningTask.Status = PlanningTaskStatus.Canceled;
+                    PlanningTaskUpdated?.Invoke(this, new TaskPlanningUpdateEventArgs(planningTask));
+                }
 
                 return planningTask;
             }
@@ -96,25 +125,22 @@ namespace TaskPlanning.Client
                 planningTask.Status = PlanningTaskStatus.Canceled;
                 planningTask.Exception = e;
 
+                PlanningTaskUpdated?.Invoke(this, new TaskPlanningUpdateEventArgs(planningTask));
+
                 return planningTask;
             }
         }
+
+        public delegate void PlanningTaskUpdatedEventHandler(object sender, TaskPlanningUpdateEventArgs e);
+        /// <summary>
+        /// This event will be invoked during the planning process. All status update on the <see cref="PlanningTask"/> will be send through this event.
+        /// </summary>
+        public event PlanningTaskUpdatedEventHandler PlanningTaskUpdated;
 
         private void ClearAccessToken()
         {
             accessToken = null;
         }
 
-        private bool IsInProgress(PlanningTask task) => task.Status switch
-        {
-            PlanningTaskStatus.Queued   => true,
-            PlanningTaskStatus.Running  => true,
-
-            PlanningTaskStatus.Success  => false,
-            PlanningTaskStatus.Canceled => false,
-            PlanningTaskStatus.Error    => false,
-
-            _ => throw new NotImplementedException($"Please implement {nameof(PlanningTaskStatus)} value {task.Status}")
-        };
     }
 }
