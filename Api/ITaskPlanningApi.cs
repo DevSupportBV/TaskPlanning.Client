@@ -22,5 +22,9 @@ namespace TaskPlanning.Client.Api
         [Get("api/Planning/{planningTaskId}")]
         [Header("Authorization", "Bearer")]
         Task<PlanningTask> GetPlanning([Path] Guid planningTaskId, CancellationToken cancellationToken);
+
+        [Delete("api/Planning/{planningTaskId}")]
+        [Header("Authorization", "Bearer")]
+        Task<PlanningTask> StopPlanning([Path] Guid planningTaskId, CancellationToken cancellationToken);
     }
 }

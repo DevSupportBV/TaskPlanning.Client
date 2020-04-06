@@ -107,6 +107,17 @@ namespace TaskPlanning.Client
 
                 if (cancellationToken.IsCancellationRequested)
                 {
+                    //Let's try to stop the planning task on the server as well.
+                    try
+                    {
+                        var task = api.StopPlanning(planningTask.Id, CancellationToken.None);
+                        await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(4)));
+                    }
+                    catch (Exception)
+                    {
+                        //Ignore this exception
+                    }
+
                     planningTask.Status = PlanningTaskStatus.Canceled;
                     PlanningTaskUpdated?.Invoke(this, new TaskPlanningUpdateEventArgs(planningTask));
                 }
